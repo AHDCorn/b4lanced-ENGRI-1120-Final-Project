@@ -46,7 +46,9 @@ Smith School of Chemical and Biomolecular Engineering, Cornell University, Ithac
 md"""
 ### Introduction
 Chemical engineers were asked to develop essential small molecules through a sustainable bioprocess. In our case, the client requested the production of PGDN from sucrose. Our goal was to determine whether the client’s proposal was economically feasible or not.
+
 Sucrose (or table sugar) is an extremely common molecular we encounter in our daily lives. It is a disaccharide composed of fructose and glucose, two monosaccharides. In contemporary society, sucrose is commercially produced for sweet foods, but it can naturally be found in sugarcane, sugar maple, and honey. On the other hand, 1,2-propanediol dinitrate (or PGDN) is a flammable and explosive small molecule. It is mainly used in Otto Fuel II, which helps run torpedoes and propellants. The client's request to convert a tangible molecule like sucrose into an unfamiliar molecule like PGDN was certainly going to be challenging.
+
 To make this a successful project, there were a few conditions that were placed:
 1. Use sucrose as a sugar feedstock for the production of 1,2-propanediol dinitrate (PGDN)
 2. Design a continuous production process that produces a 95% pure target molecule (by mass) stream at a rate of 1g/per hour. 
@@ -66,7 +68,9 @@ md"""
 # ╔═╡ ad5d595e-4dba-49cd-a446-e1df737fd75d
 md"""
 ##### Step 1: Configure the Flux Balance Analysis (FBA) calculation for a _single_ chip
+
 To start, we had to decide what compounds were needed for the input stream. We looked through all the relevant reactions in the Model_v2.vff file, and established the 6 potentially required compounds in the input stream. Below is the complete list of reactions and compounds that we believed were to partake in our project. 
+
 ###### Initially Expected Reactions Inside the Reactors:
 1. Sucrose + H2O → D-Fructose + D-Glucose
 2. ATP + D-Fructose → ADP + beta-D-Fructose 6-phosphate
@@ -79,6 +83,7 @@ To start, we had to decide what compounds were needed for the input stream. We l
 9. Methylglyoxal + NADH + H+ → (S)-Lactaldehyde + NAD+
 10. (S)-Lactaldehyde + NADH + H+ → Propane-1,2-diol + NAD+
 11. Propane-1,2-diol + 2 KNO3 → PGDN + 2 KOH
+
 ###### Initially Expected Chemicals in the Input Stream:
 - Sucrose
 - H2O
@@ -86,16 +91,22 @@ To start, we had to decide what compounds were needed for the input stream. We l
 - NADH
 - H+
 - KNO3
+
 ###### Initially Expected Chemicals in the Output Stream:
 - PGDN
 - KOH
 - NAD+
 - Orthophosphate
 - ADP
+
 ###### Initially Expected Net Reaction:
+
 - Sucrose + H2O + 3 ATP + 2 NADH + 2 H+ + 2 KNO3 → PGDN + 2 KOH + 2 NAD+ + Orthophosphate + 3 ADP
+
 ###### Test 1: 10 mmol/hr for Every Input Compound
+
 To determine the optimum flow rate for every input compound, we first started by assigning each compound's input flow rate as 10 mmol/hr to see how that was like. This led to the presence of excess reactants in the output stream. From this, we learned that we should only feed the input stream as much as the delta mol flow rate was. For this would lead to no excess reactants being present in the output stream, establishing everything to be much more efficient. Below is a table of the essential results. 
+
 | Names | n1\_dot (mmol/hr) | n2\_dot (mmol/hr) | n3\_dot (mmol/hr) | delta n\_dot (mmol/hr) |
 |:---:|:----:|:---:|:-----:|:------:| 
 | H2O | 10.0 | 0.0 | 8.767 | -1.233 |
@@ -110,8 +121,11 @@ To determine the optimum flow rate for every input compound, we first started by
 | KOH | 0.0  | 0.0 | 4.932 | +4.932 |
 | KNO3| 10.0 | 0.0 | 5.068 | -4.932 |
 | PDGN| 0.0  | 0.0 | 2.466 | +2.466 |
+
 ###### Test 2: Optimizing Mol Flow Rate For Every Input Compound
+
 As mentioned previously, although these sets of mol flow rates work, it is extremely inefficient due to the amount of excess reactants in the output stream. Therefore, this time, we tried to only use the delta flow rate into the input stream so that there will be no excess reactants in the output stream. Below is a table of our results. 
+
 | Names | n1\_dot (mmol/hr) | n2\_dot (mmol/hr) | n3\_dot (mmol/hr) | delta n\_dot (mmol/hr) |
 |:---:|:----:|:---:|:-----:|:------:| 
 | H2O | 1.233 | 0.0 | 0.0 | -1.233 |
@@ -126,8 +140,11 @@ As mentioned previously, although these sets of mol flow rates work, it is extre
 | KOH | 0.0  | 0.0 | 4.932 | +4.932 |
 | KNO3| 4.932 | 0.0 | 0.0 | -4.932 |
 | PDGN| 0.0  | 0.0 | 2.466 | +2.466 |
+
 Now if we look at the table, there are only the expected chemicals in the output stream with no excess reactants. This is a major step in optimizing the cost we need to spend per one reactor. However, even if we did this, we discovered that the project is still financially unstable due to the high ATP and NADH costs. Therefore, we had to try to minimize the amount of ATP and NADH we use while keeping the 2.466 mmol/hr of PGDN in our output stream. 
+
 To start, we revisited the Model_v2.vff file to see if ATP and NADH were naturally being created in the E. coli cell-free system. Here, we discovered multiple glycolysis reactions that would take place without inputing ATP, NADH, and H+ into the input stream. Below are a list of unexpected reactions that we discovered were actually occurring. 
+
 ###### Unexpected Chemical Reactions Inside the Reactors
 1. D-Glyceraldehyde 3-phosphate + Orthophosphate + NAD+ → 3-phospho-D-Glyceroyl phosphate + NADH + H+
 2. 3-phospho-D-Glycerate → 2-phospho-D-Glycerate
@@ -136,9 +153,13 @@ To start, we revisited the Model_v2.vff file to see if ATP and NADH were natural
 5. CoA + NAD+ + Pyruvate → Acetyl-CoA + CO2 + NADH + H+
 6. ADP + Acetyl-CoA + Orthophosphate → ATP + Acetate + CoA
 7. ADP + Orthophosphate + 3 H+ → ATP + H2O + 3 H+
+
 Through this discovery, we realized that we actually did not need to insert any ATP, NADH, or H+ in our input stream because they could be created through glycolysis in the E. coli cell-free system. Thus, we changed these compounds' input stream to be 0.0 mmol/hr. 
+
 ###### Test 3: Final Optimization
+
 Finally, the time for optimization has arrived. Now that we know the optimal mol flow rates for every necessary input compounds (Sucrose, H2O, and KNO3), and that we do not actually need any ATP, NADH, and H+ in our input stream, we get the optimized results below. 
+
 | Names | n1\_dot (mmol/hr) | n2\_dot (mmol/hr) | n3\_dot (mmol/hr) | delta n\_dot (mmol/hr) |
 |:---:|:----:|:---:|:-----:|:------:| 
 | H2O | 1.233 | 0.0 | 0.0 | -1.233 |
@@ -155,12 +176,19 @@ Finally, the time for optimization has arrived. Now that we know the optimal mol
 | KOH | 0.0  | 0.0 | 4.932 | +4.932 |
 | KNO3| 4.932 | 0.0 | 0.0 | -4.932 |
 | PDGN| 0.0  | 0.0 | 2.466 | +2.466 |
+
 As we see from the above table, when we changed the input mol flow rate of ATP, NADH, and H+ to 0.0 mmol/hr, there were no more NAD+, ADP, Orthophosphate, and alpha-D-Glucose in the output stream. This made the output stream significantly more "pure" with our target molecule, PGDN, so we would require fewer separators to extract 95% pure PGDN by mass. However, in return, there were new compounds in the output stream, CO2 and Acetate. This is due to reaction 5 and 6 from the Unexpected Chemical Reactions Inside the Reactors list. After we did quick financial calculations, we discovered that by not using any ATP and NADH, we were able to save a significant amount of money, and thus make the project much more plausible for the client.  
+
 ###### Parallel vs Series
+
 Since all of our previous work was trying to optimize the reactions in one reactor, it made a lot of sense for us to use parallel chips as the reactors are independent of each other. A series chips will not work for us as our calculations lead to there being no excess reactants for the following reactor to use. Thus, from a logical standpoint, we decided to work with a parallel chip system. 
+
 ###### Chips and Separators 
+
 For our final step, we needed to figure out how many chips and separators were necessary to fulfill the client's requirement of 95% pure target molecule flowing at a rate of at least 1g/hr. Since each chip and separator cost money, we wanted to minimize the number of chips and separators we needed to use, but still enough to be able to meet the requirements. After multiple trial and errors, we discovered that using 6 chips and 4 separators will produce approximately 95.4% pure PGDN with a mass flow rate of about 1.09 g/hr. As you can see, we were successful in minimizing the number of chips and separators while fulfilling the requirements. 
+
 Now we were ready to start the simulation, calculate the financial aspect of the project, and present it to the client. 
+
 """
 
 # ╔═╡ 5bfdf6f9-2927-4a9a-a386-8840c676329b
@@ -278,26 +306,37 @@ end
 # ╔═╡ e8a4faf8-2285-4544-830c-f39d3847e8cc
 md"""
 ##### Step 2: Method to compute the composition that is going into the downstream separation system 
+
 In a parallel system of $N$ chips, each chip acts independently. Thus, to compute the output from the mixer operation we add up the components in each stream into the mixer (N inputs and a single output). Starting from the steady-state species mol balance: 
+
 $$\sum_{s=1}^{N+1}v_{s}\dot{n}_{i,s} = 0\qquad{i=1,2,\dots,\mathcal{M}}$$
+
 we can solve for the mixer output stream composition:
+
 $$\dot{n}_{i,N+1} = -\sum_{s=1}^{N}v_{s}\dot{n}_{i,s}\qquad{i=1,2,\dots,\mathcal{M}}$$
+
 However, since each chip is _identical_ we know that: $\dot{n}_{i,N+1} = N\times\dot{n}_{i,1}$. Alternatively, we could do the same thing with species mass balances (which is probably more useful in this case because our downstream separation units operate on a mass basis).
+
 """
 
 # ╔═╡ 10424555-39cc-4ddf-8c22-db91cf102bfd
 md"""
 ##### Step 3: Downstream separation using Magical Sepration Units (MSUs)
+
 To separate the desired product from the unreacted starting materials and by-products, let's suppose the teaching team invented a magical separation unit or MSU. MSUs have one stream in, and two streams out (called the top, and bottom, respectively) and a fixed separation ratio for all products (that's what makes them magical), where the desired product is _always_ in the top stream at some ratio $\theta$. In particular, if we denote $i=\star$ as the index for the desired product (in this case 1,3 propanediol), then after one pass (stream 1 is the input, stream 2 is the top, and stream 3 is the bottom) we have:
+
 $$\begin{eqnarray}
 \dot{m}_{\star,2} &=& \theta_{\star}\dot{m}_{\star,1}\\
 \dot{m}_{\star,3} &=& (1-\theta_{\star})\dot{m}_{\star,1}\\
 \end{eqnarray}$$
+
 for the product. In this case, we set $\theta_{\star}$ = 0.75. On the other hand, for _all_ other materials in the input, we have $\left(1-\theta_{\star}\right)$ in the top, and $\theta_{\star}$ in the bottom, i.e.,
+
 $$\begin{eqnarray}
 \dot{m}_{i,2} &=& (1-\theta_{\star})\dot{m}_{i,1}\qquad{\forall{i}\neq\star}\\
 \dot{m}_{i,3} &=& \theta_{\star}\dot{m}_{i,1}\\
 \end{eqnarray}$$
+
 If we chain these units together we can achieve a desired degree of separation.
 """
 
@@ -305,11 +344,14 @@ If we chain these units together we can achieve a desired degree of separation.
 md"""
 ### Results and Discussion
 In order to determine whether this process is financially advantageous, we had to calculate the total fee of setting up the reactor, input materials cost per hour, the cost to buy pure materials from SigmaAldrich, and Net Present Value.
+
 (Total Fee of Setting Up the Reactor) = $ 1680
+
 According to the Flux Balance Analysis has explained just now, the number of chips that led to the most optimal output was 6. Since each chip costs $100, the client needs to spend $600 dollars. 
 We assumed 1 pump is able to pump all the reactants into 10 parallel-connected chips. Therefore, you needs to spend $1000.
 Lastly, Flux Balance Analysis indicated that we can reach over 95% purity by mass at the 4th separator. Since each separator costs $20, the client needs to spend $80.
 Therefore, the total cost of setting up the reactor is $600 + $1000 + $80 = $1680.
+
 Input Materials Cost per hour
   * 1.233 mmol/hr of sucrose
     * 0.030807 $ /mmol
@@ -319,19 +361,28 @@ Input Materials Cost per hour
     * 0.001393109982 $ /hr
 - 4.932 mmol/hr of KNO3
     * 0.0787827816 $ /hr
+
 At first, we had ATP and NADH as reactants as well; however, these two had extremely high prices/hr. Therefore, we found other input combinations without ATP and NADP to reach the same optimal result. When there were no ATP and NADH, we were able to save prices by a lot.
+
 Total Cost = 0.1181609226 $ /hr or $ 1035.09 per year
+
 Assumption: Since PGDN is not in the Sigma catalog, we approximated the sales price of PGDN as the cost of 1,2 Propanediol and the required KNO3.
+
 How much would it cost to buy directly?
 - (1.08674 g)(.953991 pure) = 1.037 g/hr pure PGDN
 - (0.972)(24)(365) = 9081.84 g/yr pure PGDN = 54.67 mol/yr
 - $ 377.99 per year of 1,2-Propanediol
 - $ 1746.57 per year of KNO3 
 - Total: $ 2124.56 per year or 0.24 $ /hr
+
 ###### Net Present Value Calculation
+
 Initial Investment = $ 1680
+
 Money saved per year: 2124.56 - 1035.09 = $ 1089.47
+
 For 1% depreciation rate, in two years the NPV will be ($ -1680) + ($ 1089.47)(0.99) + ($ 956.95)(0.99)(0.99) = 466.36 > 0, which means in two years the project will be financially sustainable.
+
 For 10% depreciation rate, in two years the NPV will be ($ -1680) + ($ 1089.47)(.9) + ($ 1089.47)*(.9)*(0.9) = 182.99 > 0, which means in two years the project will be financially sustainable.
 """
 
@@ -571,16 +622,19 @@ Throughout this project, we referred to various secondary sources. Below is a li
 # ╔═╡ cef22b5d-be5d-49f2-987f-77cf1b9379b9
 html"""
 <style>
+
 main {
     max-width: 1200px;
     width: 75%;
     margin: auto;
     font-family: "Roboto, monospace";
 }
+
 a {
     color: blue;
     text-decoration: none;
 }
+
 .H1 {
     padding: 0px 30px;
 }
@@ -589,6 +643,7 @@ a {
 # ╔═╡ 213d4486-584f-11ec-2373-5d05e90dc5f8
 html"""
 <script>
+
 	// initialize -
 	var section = 0;
 	var subsection = 0;
@@ -622,6 +677,7 @@ html"""
 	            numbering = section + "." + subsection;
 	            break;
 	    }
+
 		// update the header text 
 		header.innerText = numbering + " " + text;
 	};
@@ -1634,7 +1690,7 @@ version = "0.9.1+5"
 # ╟─833d7250-f4ab-49a2-a43e-1b21def59ad4
 # ╟─251363ad-1927-4b05-99f5-8c3f2508c0cb
 # ╟─884a0a7d-e5d8-4417-b109-d00c37a01766
-# ╠═ad5d595e-4dba-49cd-a446-e1df737fd75d
+# ╟─ad5d595e-4dba-49cd-a446-e1df737fd75d
 # ╠═5bfdf6f9-2927-4a9a-a386-8840c676329b
 # ╟─e8a4faf8-2285-4544-830c-f39d3847e8cc
 # ╟─10424555-39cc-4ddf-8c22-db91cf102bfd
